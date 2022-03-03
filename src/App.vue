@@ -1,21 +1,30 @@
 <template>
   <main>
+    <p class="time">{{ hour12 }} : {{ min }} {{ ampm }}</p>
     <p class="day">{{ dayName }}, {{ ordinal }} {{ monthName }}</p>
 
     <div class="search">
-      <input type="search" placeholder="Location" />
+      <input
+        type="search"
+        placeholder="Location"
+        v-model="query"
+        @keypress.enter="fetchWeather"
+      />
     </div>
+    <div class="content" v-if="weather.current">
+      <div class="place">
+        <span class="placeName"
+          >{{ weather.location.name }}, {{ weather.location.country }}</span
+        >
+        <span class="weatherDesc"> {{ weather.current.condition.text }}</span>
+      </div>
 
-    <div class="place">
-      <span class="placeName">London</span>
-      <span class="weatherDesc"> Windy </span>
+      <div class="weatherImg">
+        <img :src="weather.current.condition.icon" alt="" />
+      </div>
+
+      <p class="degree">{{ weather.current.temp_c }}°C</p>
     </div>
-
-    <div class="weatherImg">
-      <img src="" alt="" class="" />
-    </div>
-
-    <p class="degree">22°C</p>
   </main>
 </template>
 
@@ -24,6 +33,11 @@ export default {
   name: "App",
   data() {
     return {
+      // Time
+      hour: "",
+      min: "",
+      ampm: "",
+
       // Day
       dayName: "",
       dayNum: "",
@@ -53,14 +67,39 @@ export default {
       ],
 
       // Weather
-      apiKey: "0e673a07abc8702797b4a49338776416",
-      placeName: "",
+      apiKey: "e46e5bf3e23049e6b20193653220303",
+      url: "https://api.weatherapi.com/v1/current.json",
+      query: "",
+      weather: {},
     };
   },
   methods: {
+    // Get weather
+    fetchWeather() {
+      fetch(`${this.url}?key=${this.apiKey}&q=${this.query}`)
+        .then((res) => {
+          return res.json();
+        })
+        .then(this.setResults)
+        .catch((err) => {
+          console.log(err);
+        });
+      this.query = "";
+    },
+    setResults(results) {
+      this.weather = results;
+    },
+
+    // Get time and date
     today: function () {
       let d = new Date();
 
+      // Time
+      this.hour = d.getHours() < 10 ? `0${d.getHours()}` : d.getHours();
+      this.min = d.getMinutes() < 10 ? `0${d.getMinutes()} ` : d.getMinutes();
+      this.ampm = d.getHours() >= 12 ? "pm" : "am";
+
+      // Date
       this.dayName = this.week[d.getDay()];
       this.dayNum = d.getDate();
       this.monthName = this.month[d.getMonth()];
@@ -79,9 +118,20 @@ export default {
         return `${this.dayNum}th`;
       }
     },
+    hour12() {
+      if (this.hour == 0) {
+        return this.hour == 12;
+      } else if (this.hour > 12) {
+        return `0${this.hour - 12}`;
+      } else {
+        return this.hour;
+      }
+    },
   },
   mounted() {
-    this.today();
+    setInterval(() => {
+      this.today();
+    }, 1000);
   },
 };
 </script>
@@ -109,12 +159,18 @@ main {
   min-height: auto;
   box-shadow: 12px 15px 10px 0px rgba(0, 0, 0, 0.4);
   border-radius: 8px;
-  width: 350px;
+  width: 400px;
   padding: 20px;
+}
+.time {
+  color: #e0c097;
+  text-align: right;
+  font-size: 0.7em;
+  font-weight: 700;
 }
 .day {
   margin: 30px 0 20px 0;
-  font-size: 0.8em;
+  font-size: 0.9em;
   opacity: 0.7;
 }
 input {
@@ -143,11 +199,22 @@ input:focus {
 }
 .placeName {
   font-weight: 800;
-  text-shadow: 2px 3px rgba(0, 0, 0, 0.2);
+  text-shadow: 2px 3px rgba(0, 0, 0, 0.1);
   font-size: 1.2em;
 }
 .weatherDesc {
-  font-size: 0.8em;
+  margin-top: 10px;
+  font-size: 0.9em;
   opacity: 0.7;
+}
+.weatherImg {
+  margin: 20px 0;
+}
+.weatherImg img {
+  width: 100px;
+  height: 100px;
+}
+.degree {
+  margin-bottom: 10px;
 }
 </style>
